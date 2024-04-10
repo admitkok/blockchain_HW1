@@ -6,7 +6,7 @@ def find_nonce():
     while True:
         input_str = "Alex" + str(nonce)
         hash_result = sha256(input_str.encode()).hexdigest()
-        if hash_result.startswith('000000'):
+        if hash_result.startswith('0'):
             return nonce, hash_result
         nonce += 1
 

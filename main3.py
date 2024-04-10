@@ -9,16 +9,33 @@ from ipv8.types import Peer
 from ipv8.util import run_forever
 from ipv8_service import IPv8
 from ipv8.peerdiscovery.network import PeerObserver
+from hashlib import sha256
+
+# Find a nonce such that the hash of "Dima"+nonce starts with six zeros
+def find_nonce():
+    nonce = 0
+    while True:
+        input_str = "Alex" + str(nonce)
+        hash_result = sha256(input_str.encode()).hexdigest()
+        if hash_result.startswith('0'):
+            return nonce, hash_result
+        nonce += 1
 
 
 @dataclass(msg_id=1)
 class PuzzleMessage:
     name: str
     nonce: int
+    amount: int
+
+@dataclass(msg_id=2)
+class Transaction:
+    value: int
+    to: str
 
 
 class MyCommunity(Community, PeerObserver):
-    community_id = b'harbourspaceuniverse'
+    community_id = b'blockchainbytem23332'
 
     def on_peer_added(self, peer: Peer) -> None:
         print("I am:", self.my_peer, "I found:", peer)
@@ -31,22 +48,23 @@ class MyCommunity(Community, PeerObserver):
 
         async def start_communication() -> None:
             for p in self.get_peers():
-                self.ez_send(p, PuzzleMessage(name="Alex", nonce=46367806))
+                nonce, hash_result = find_nonce()
+                print(nonce, hash_result)
+                amount = int(input("Enter amount: "))
+                self.ez_send(p, PuzzleMessage(name="Alex", nonce=6, amount= amount))
+                self.ez_send(p, Transaction(value=amount, to="Dima"))
 
         self.register_task("start_communication", start_communication, interval=5.0, delay=0)
 
     @lazy_wrapper(PuzzleMessage)
     def on_message(self, peer: Peer, payload: PuzzleMessage) -> None:
-        print(f"Received a message from {peer} with name {payload.name} and puzzle {payload.puzzle}")
+        print(f"Received a message from {peer} with name {payload.name} and puzzle {payload.nonce},\n amount: {payload.amount}")
 
 
 async def start_communities() -> None:
-    for i in range(1):
+    for i in range(3):
         builder = ConfigBuilder().clear_keys().clear_overlays()
         builder.add_key("my peer", "medium", f"ec{i}.pem")
-        # We provide the 'started' function to the 'on_start'.
-        # We will call the overlay's 'started' function without any
-        # arguments once IPv8 is initialized.
         builder.add_overlay("MyCommunity", "my peer",
                             [WalkerDefinition(Strategy.RandomWalk,
                                               10, {'timeout': 3.0})],

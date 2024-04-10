@@ -62,6 +62,7 @@ class MyCommunity(Community):
             cls.community_instance = await IPv8(builder.finalize(),
                                                 extra_communities={'MyCommunity': cls}).start()
         return cls.community_instance
+        await run_forever()
 
     @lazy_wrapper(MyMessage)
     def on_message(self, peer: Peer, payload: MyMessage) -> None:
